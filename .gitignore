@@ -1,0 +1,6 @@
+node_modules/
+.DS_Store
+*.log
+.playwright-mcp/
+# keep the private dashboard export out of the public repo
+progress.json
