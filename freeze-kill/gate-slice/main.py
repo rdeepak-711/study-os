@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 import os
@@ -38,3 +38,35 @@ async def get_entries():
     mycursor.execute(sql)
     result = mycursor.fetchall()
     return result
+
+@app.get("/entries/{id}")
+async def get_specific_entry(id):
+    sql = "SELECT * FROM entries where id=(%s)"
+    val = [id]
+    mycursor.execute(sql, val)
+    result = mycursor.fetchall()
+    if not result:
+        raise HTTPException(status_code=404, detail="Item not found")
+    return result
+
+@app.put("/entries/{id}")
+async def add_specific_entry(id, entry: DBEntry):
+    sql = "UPDATE entries SET text=(%s) where id=(%s)"
+    val = [entry.text, id]
+    mycursor.execute(sql, val)
+    rowCount = mycursor.rowcount
+    if rowCount==0:
+        raise HTTPException(status_code=404, detail="Item not found")
+    mydb.commit()
+    return {"message": "Entry updated successfully", "id":id}
+
+@app.delete("/entries/{id}")
+async def delete_specific_entry(id):
+    sql = "DELETE FROM entries where id=(%s)"
+    val = [id]
+    mycursor.execute(sql, val)
+    rowCount = mycursor.rowcount
+    if rowCount==0:
+        raise HTTPException(status_code=404, detail="Item not found")
+    mydb.commit()
+    return {"message": "Entry deleted successfully", "id":id}
