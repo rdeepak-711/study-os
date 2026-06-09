@@ -1,5 +1,7 @@
 from fastapi import FastAPI
+from pydantic import BaseModel
 
+import os
 import mysql.connector
 
 app = FastAPI()
@@ -7,8 +9,11 @@ app = FastAPI()
 mydb = mysql.connector.connect(
     host="localhost",
     user="root",
-    password="1234567890"
+    password=os.environ.get("MYSQL_PASSWORD")
 )
+
+class DBEntry(BaseModel):
+    text: str
 
 # creating a cursor object
 mycursor = mydb.cursor()
@@ -19,18 +24,17 @@ mycursor.execute("USE gate_slice")
 mycursor.execute("CREATE TABLE IF NOT EXISTS entries(id INT AUTO_INCREMENT PRIMARY KEY, text VARCHAR(255), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
 
 @app.post("/entries")
-async def create_entry(text: str):
+async def create_entry(entry: DBEntry):
     sql = "INSERT INTO entries (text) VALUES (%s)"
-    val = [text]
+    val = [entry.text]
     mycursor.execute(sql, val)
+    id_no = mycursor.lastrowid
     mydb.commit()
-    return {"message": "Entry created successfully"}
+    return {"message": "Entry created successfully", "id":id_no}
 
 @app.get("/entries")
 async def get_entries():
-    sql = "SELECT * FROM entries ORDER BY created_at DESC"
+    sql = "SELECT * FROM entries ORDER BY id DESC"
     mycursor.execute(sql)
     result = mycursor.fetchall()
-    for x in result:
-        print(x)
     return result
